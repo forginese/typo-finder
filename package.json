@@ -1,0 +1,17 @@
+{
+	"name": "forginese_typo-finder",
+	"version": "1.0.0",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"build:cspell": "npx cspell 'output/messages.txt' --words-only --unique > output/typos.txt"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"description": "",
+	"type": "module",
+	"dependencies": {
+		"cspell": "^8.19.4"
+	}
+}

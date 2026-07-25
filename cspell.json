@@ -1,0 +1,14 @@
+{
+	"version": "0.2",
+	"dictionaryDefinitions": [
+		{
+			"name": "excluded-words",
+			"path": "./dictionaries/excluded-words.txt"
+		},
+		{
+			"name": "special-words",
+			"path": "./dictionaries/special-words.txt"
+		}
+	],
+	"dictionaries": ["excluded-words", "special-words"]
+}
