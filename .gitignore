@@ -1,4 +1,7 @@
 node_modules/
-src/
-output/
+src/*
+base/*
+output/*
+dictionaries/*
+special.txt
 .DS_Store

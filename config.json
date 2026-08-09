@@ -1,0 +1,13 @@
+{
+	"folders": {
+		"src": "src",
+		"base": "base",
+		"output": "output"
+	},
+	"filenames": {
+		"final_json": "final.json", "source_txt": "source.txt",
+		"corrections_txt": "corrections.txt", "typos_txt": "typos.txt",
+		"extracted_msgs_txt": "messages.txt"
+	},
+	"case_insensitive": true
+}

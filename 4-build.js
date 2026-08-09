@@ -1,47 +1,66 @@
+console.log("### 4-build.js");
+
 import fs from "fs";
 import path from "path";
 
-const src_folder = "src";
-const output_folder = "output";
-const dictionaries_folder = "dictionaries";
+const config_path = path.join(process.cwd(), "config.json");
+let config = {
+	folders: {src: "src", base: "base", output: "output"},
+	filenames: {
+		final_json: "final.json", source_txt: "source.txt",
+		corrections_txt: "corrections.txt", typos_txt: "typos.txt",
+		extracted_msgs_txt: "messages.txt"
+	},
+	case_insensitive: true
+}
 
-const src_path = path.join(process.cwd(), `/${src_folder}/`);
-const output_path = path.join(process.cwd(), `/${output_folder}/`);
-const dictionaries_path = path.join(process.cwd(), `/${dictionaries_folder}/`);
+if (fs.existsSync(config_path)) {config = {...config, ...JSON.parse(fs.readFileSync(config_path, "utf8"))};}
 
-const typos_path = path.join(output_path, "typos.txt");
-const dictlinks_path = path.join(output_path, "corrections.txt"); // used to be called dict-links.txt, and it has shpaed this script the way it is, but i just can't be bothered to rename everything to reflect the filename change :pensive::pleading:
+const src_path = path.join(process.cwd(), `/${config.folders.src}/`);
+const base_path = path.join(process.cwd(), `/${config.folders.base}/`);
+const output_path = path.join(process.cwd(), `/${config.folders.output}/`);
+
+const typos_path = path.join(base_path, config.filenames.typos_txt);
+const dictlinks_path = path.join(base_path, config.filenames.corrections_txt); // used to be called dict-links.txt, and it has shpaed this script the way it is, but i just can't be bothered to rename everything to reflect the filename change :pensive::pleading:
+
+const typosourcetxt_path  = path.join(output_path, config.filenames.source_txt);
+const typosourcejson_path = path.join(output_path, config.filenames.final_json); // used to be called typo-source but i couldn't be bothered to blah blah blah
+
+const dictionaries_path = path.join(process.cwd(), "/dictionaries/");
 const specialwords_path = path.join(dictionaries_path, "special-words.txt");
 
 const typos_raw = fs.readFileSync(typos_path, "utf8");
-const typos = typos_raw.split("\n").filter(word => word.trim() !== "");
+const typos = config.case_insensitive
+	// convert to lowercase and remove duplicates using new Set()
+	? [...new Set(typos_raw.split("\n").filter(word => word.trim() !== "").map(word => word.toLowerCase()))]
+	: typos_raw.split("\n").filter(word => word.trim() !== "")
 
 // (expects: typo || url || correction)
-const dictLinks = new Map();
+const dict_links = new Map();
 if (fs.existsSync(dictlinks_path)) {
 	const raw_links = fs.readFileSync(dictlinks_path, "utf8").split("\n").filter(l => l.trim() !== "");
 	raw_links.forEach(line => {
 		const parts = line.split(" || ");
 		if (parts.length >= 3) {
-			dictLinks.set(parts[0].trim(), {url: parts[1].trim(), correction: parts[2].trim()});
+			dict_links.set(config.case_insensitive ? parts[0].trim().toLowerCase() : parts[0].trim(), {url: parts[1].trim(), correction: parts[2].trim()});
 		}
 	});
 }
 
-const specialWords = new Set();
+const special_words = new Set();
 if (fs.existsSync(specialwords_path)) {
 	const raw_special = fs.readFileSync(specialwords_path, "utf8").split("\n").filter(w => w.trim().slice(1) !== "");
-	raw_special.forEach(w => specialWords.add(w.slice(1)));
+	raw_special.forEach(word => special_words.add(config.case_insensitive ? word.slice(1).toLowerCase() : word.slice(1)));
 }
 
 const typos_finalmap = new Map();
 typos.forEach(typo => {
-	const linkData = dictLinks.get(typo) || {url: null, correction: null};
+	const linkData = dict_links.get(typo) || {url: null, correction: null};
 	typos_finalmap.set(typo, {
 		word: typo, correction: linkData.correction,
 		details: {
 			dictionary_url: linkData.url === "null" ? null : linkData.url,
-			is_special: specialWords.has(typo),
+			is_special: special_words.has(typo),
 			occurrences: []
 		}
 	});
@@ -58,7 +77,7 @@ message_files.forEach(file => {
 	messagesArray.forEach(msg => {
 		if (msg.content) {
 			const matchedTypos = typos.filter(typo => {
-				const regex = new RegExp(`\\b${typo}\\b`); return regex.test(msg.content);
+				const regex = new RegExp(`\\b${typo}\\b`, config.case_insensitive ? "i" : ""); return regex.test(msg.content);
 			});
 			
 			if (matchedTypos.length > 0) {
@@ -88,8 +107,6 @@ Array.from(typos_finalmap.values()).forEach(item => {
 });
 
 const finalJSONOutput = {messages, corrections: Array.from(corrections_map.values()), typos: Array.from(typos_finalmap.values())};
-const typosourcetxt_path  = path.join(output_path, "typo-source.txt");
-const typosourcejson_path = path.join(output_path, "final.json"); // used to be called typo-source but i couldn't be bothered to blah blah blah
 
 let textOutput = "# TYPO SOURCE MESSAGES\n\n";
 foundMessagesForText.forEach(item => {
@@ -107,4 +124,4 @@ console.log(`\nJSON created successfully to ${typosourcejson_path}!`);
 console.log(`  - saved ${typos_finalmap.size} typos`);
 console.log(`  - saved ${corrections_map.size} corrections`);
 console.log(`  - saved ${Object.keys(messages).length} unique messages containing typos`);
-console.log(`\noh and txt "TYPO SOURCE MESSAGES" file created successfully to ${typosourcetxt_path}!\n`);
+console.log(`\noh and "TYPO SOURCE MESSAGES" txt file created successfully to ${typosourcetxt_path}!\n`);

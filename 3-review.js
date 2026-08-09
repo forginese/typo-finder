@@ -1,20 +1,34 @@
+console.log("### 3-review.js");
+
 import fs from "fs";
 import path from "path";
 import readline from "readline";
 
-const output_folder = "output";
-const dictionaries_folder = "dictionaries";
+const config_path = path.join(process.cwd(), "config.json");
+let config = {
+	folders: {src: "src", base: "base", output: "output"},
+	filenames: {
+		final_json: "final.json", source_txt: "source.txt",
+		corrections_txt: "corrections.txt", typos_txt: "typos.txt",
+		extracted_msgs_txt: "messages.txt"
+	},
+	case_insensitive: true
+}
 
-const output_path = path.join(process.cwd(), `/${output_folder}/`);
-const dictionaries_path = path.join(process.cwd(), `/${dictionaries_folder}/`);
+if (fs.existsSync(config_path)) {config = {...config, ...JSON.parse(fs.readFileSync(config_path, "utf8"))};}
 
-const typos_path = path.join(output_path, "typos.txt");
-const corrections_path = path.join(output_path, "corrections.txt"); // used to be called dict-links.txt, and it has shpaed this script the way it is, but i just can't be bothered to rename everything to reflect the filename change :pensive::pleading:
+const base_path = path.join(process.cwd(), `/${config.folders.base}/`);
+const output_path = path.join(process.cwd(), `/${config.folders.output}/`);
+
+const typos_path = path.join(base_path, config.filenames.typos_txt);
+const corrections_path = path.join(base_path, config.filenames.corrections_txt);
+
+const dictionaries_path = path.join(process.cwd(), "/dictionaries/");
 const exclude_path = path.join(dictionaries_path, "excluded-words.txt");
 
-if (!fs.existsSync(typos_path)) {console.log(`could not find ${typos_path}! did'ya you run cspell first?`); process.exit(1);}
-if (!fs.existsSync(exclude_path)) {console.log(`could not find ${exclude_path}! did'ya make the file first?`); process.exit(1);}
-// excluded words is required. just create a blank file if exclusions aren"t needed.
+if (!fs.existsSync(typos_path)) {console.log(`could not find ${typos_path}! did'ya you run 2-cspell.js first?`); process.exit(1);}
+if (!fs.existsSync(exclude_path)) {console.log(`could not find ${exclude_path}! a blank file will be created in place for it.`); fs.writeFileSync(exclude_path, "");}
+// excluded words is required. this will create a blank file automatically.
 
 const typos_raw = fs.readFileSync(typos_path, "utf8");
 const typos = typos_raw.split("\n").filter(word => word.trim() !== "");
@@ -52,8 +66,8 @@ async function init_review() {
 
 	let typosToReview = typos.filter(typo => !processedDict.has(typo) && !existingExcludes.has(typo));
 
-	console.log(`\n=== TYPO REVIEWER ===`);
-	console.log(`Remaining typos to review: ${typosToReview.length}\n`);
+	console.log(`\n# TYPO REVIEWER`);
+	console.log(`remaining typos to review: ${typosToReview.length}\n`);
 
 	let newExcludeds = [];
 
@@ -62,7 +76,7 @@ async function init_review() {
 		console.log(`[${i + 1}/${typosToReview.length}] Typo: "${typo}"`);
 		console.log("  - Paste URL to assign a dictionary link");
 		console.log("  - Type \"none\" if there's no link, but you want to provide a correction");
-		console.log("  - Type \"null\" to exclude word (rerun cspell to apply changes)");
+		console.log("  - Type \"null\" to exclude word (rerun 2-cspell.js to apply changes)");
 		console.log("  - Press enter to skip (URLs that don't start with http:// or https:// will be skipped)");
 		
 		const answer = await ask_question("input: ");
@@ -73,7 +87,7 @@ async function init_review() {
 			console.log(`--> added "${typo}" to ${exclude_path}.`);
 
 		} else if (input.toLowerCase() === "none" || input.toLowerCase() === "no") {
-			let correctionInput = await ask_question("  - What is the corrected word?: ");
+			let correctionInput = await ask_question("  - what is the corrected word?: ");
 			let finalCorrection = correctionInput.trim();
 
 			if (finalCorrection !== "") {
@@ -112,7 +126,9 @@ async function init_review() {
 		console.log(`added ${(existingExcludes.size > previousExcludesSize) ? existingExcludes.size - previousExcludesSize : 0} new excluded words to ${exclude_path}`);
 	}
 	console.log("\n");
-	console.log(`rrrrreview complete!`);
+	console.log(`rrrrreview complete!\n`);
+	console.log(`# you should be able to move on to running 4-build.js`);
+	console.log(`    - rerun 2-cspell.js if new excluded words have been added.\n`);
 }
 
 init_review();

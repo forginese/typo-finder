@@ -4,7 +4,15 @@
 	"main": "index.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"build:cspell": "npx cspell 'output/messages.txt' --words-only --unique > output/typos.txt"
+		"extract:messages": "node 1-extract.js",
+		"build:cspell": "node 2-cspell.js",
+		"review:typo": "node 3-review.js",
+		"build:final": "node 4-build.js",
+		"1": "node 1-extract.js",
+		"2": "node 2-cspell.js",
+		"3": "node 3-review.js",
+		"4": "node 4-build.js",
+		"all": "node 1-extract.js && node 2-cspell.js && node 3-review.js && node 4-build.js"
 	},
 	"keywords": [],
 	"author": "",
