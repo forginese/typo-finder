@@ -38,7 +38,7 @@ const typos = config.case_insensitive
 // (expects: typo || url || correction)
 const dict_links = new Map();
 if (fs.existsSync(dictlinks_path)) {
-	const raw_links = fs.readFileSync(dictlinks_path, "utf8").split("\n").filter(l => l.trim() !== "");
+	const raw_links = fs.readFileSync(dictlinks_path, "utf8").split("\n").filter(link => link.trim() !== "");
 	raw_links.forEach(line => {
 		const parts = line.split(" || ");
 		if (parts.length >= 3) {
@@ -49,15 +49,30 @@ if (fs.existsSync(dictlinks_path)) {
 
 const special_words = new Set();
 if (fs.existsSync(specialwords_path)) {
-	const raw_special = fs.readFileSync(specialwords_path, "utf8").split("\n").filter(w => w.trim().slice(1) !== "");
+	const raw_special = fs.readFileSync(specialwords_path, "utf8").split("\n").filter(word => (word.trim() !== "" && word.startsWith("!")));
 	raw_special.forEach(word => special_words.add(config.case_insensitive ? word.slice(1).toLowerCase() : word.slice(1)));
+}
+
+// this is here so that "anf." and "anf" would work. i'm crying
+function escape_regex(string) {return string.replace(new RegExp("[.*+?^${}()|[\]\\]", "g"), "\\$&");}
+function typo_regex(typo) {
+    const start_boundary = new RegExp("^\w").test(typo) ? "\\b" : "(?:^|\\s)";
+    const escaped = escape_regex(typo);
+    const end_boundary = new RegExp("\w$").test(typo) ? "\\b" : "(?:$|[\\s,!?\"'\n])";
+    return new RegExp(`${start_boundary}${escaped}${end_boundary}`, config.case_insensitive ? "i" : "");
+}
+
+// for pagination
+function generate_slug(string) {
+  return escape_regex(string).trim().replace(".", "-dot").replace("!", "-exclamation").replace("?", "-question")
+    .replace(new RegExp("[^a-zA-Z0-9-]", "g"), "").replace(new RegExp("-+", "g"), "-").replace(new RegExp("^-|-$", "g"), "");
 }
 
 const typos_finalmap = new Map();
 typos.forEach(typo => {
 	const linkData = dict_links.get(typo) || {url: null, correction: null};
 	typos_finalmap.set(typo, {
-		word: typo, correction: linkData.correction,
+		word: typo, slug: generate_slug(typo), correction: linkData.correction,
 		details: {
 			dictionary_url: linkData.url === "null" ? null : linkData.url,
 			is_special: special_words.has(typo),
@@ -77,7 +92,7 @@ message_files.forEach(file => {
 	messagesArray.forEach(msg => {
 		if (msg.content) {
 			const matchedTypos = typos.filter(typo => {
-				const regex = new RegExp(`\\b${typo}\\b`, config.case_insensitive ? "i" : ""); return regex.test(msg.content);
+				const regex = typo_regex(typo); return regex.test(msg.content);
 			});
 			
 			if (matchedTypos.length > 0) {
@@ -98,11 +113,14 @@ message_files.forEach(file => {
 });
 
 const corrections_map = new Map();
-Array.from(typos_finalmap.values()).forEach(item => {
-	if (item.correction && item.correction !== "null") {
-		const correction_data = {word: item.correction, dictionary_url: item.details.dictionary_url, typos: []};
-		if (!corrections_map.has(item.correction)) {corrections_map.set(item.correction, correction_data);}
-		corrections_map.get(item.correction).typos.push(item.word);
+typos_finalmap.forEach(entry => {
+	if (entry.correction && entry.correction !== "null") {
+		const correction_data = {
+			word: entry.correction, slug: generate_slug(entry.correction), dictionary_url: entry.details.dictionary_url,
+			typos: []
+		};
+		if (!corrections_map.has(entry.correction)) {corrections_map.set(entry.correction, correction_data);}
+		corrections_map.get(entry.correction).typos.push(entry.word);
 	}
 });
 
