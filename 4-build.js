@@ -70,11 +70,15 @@ function generate_slug(string) {
 
 const typos_finalmap = new Map();
 typos.forEach(typo => {
-	const linkData = dict_links.get(typo) || {url: null, correction: null};
+	const link_data = dict_links.get(typo) || {url: null, correction: null};
 	typos_finalmap.set(typo, {
-		word: typo, slug: generate_slug(typo), correction: linkData.correction,
+		word: typo, slug: generate_slug(typo),
+		correction: link_data.correction !== null ? {
+			word: link_data.correction, slug: generate_slug(link_data.correction),
+			dictionary_url: link_data.url === "null" ? null : link_data.url,
+			typos: []
+		} : null,
 		details: {
-			dictionary_url: linkData.url === "null" ? null : linkData.url,
 			is_special: special_words.has(typo),
 			occurrences: []
 		}
@@ -112,16 +116,22 @@ message_files.forEach(file => {
 	});
 });
 
+// there is probably a better way to code this but i just want this to work and it did
 const corrections_map = new Map();
 typos_finalmap.forEach(entry => {
-	if (entry.correction && entry.correction !== "null") {
-		const correction_data = {
-			word: entry.correction, slug: generate_slug(entry.correction), dictionary_url: entry.details.dictionary_url,
-			typos: []
-		};
-		if (!corrections_map.has(entry.correction)) {corrections_map.set(entry.correction, correction_data);}
-		corrections_map.get(entry.correction).typos.push(entry.word);
+	if (!entry.correction) return;
+	const correction_data = entry.correction; if (!correction_data) return;
+
+	if (!corrections_map.has(correction_data.word)) {
+		corrections_map.set(correction_data.word, correction_data);
 	}
+
+	const correction_typos = corrections_map.get(correction_data.word).typos;
+	correction_typos.push(entry.word);
+	correction_typos.forEach(typo => {
+		const typo_correctiondata = typos_finalmap.get(typo).correction; if (!typo_correctiondata) return;
+		typo_correctiondata.typos = [...correction_typos];
+	});
 });
 
 const finalJSONOutput = {messages, corrections: Array.from(corrections_map.values()), typos: Array.from(typos_finalmap.values())};
