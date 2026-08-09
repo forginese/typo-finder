@@ -55,12 +55,9 @@ if (fs.existsSync(specialwords_path)) {
 
 // this is here so that "anf." and "anf" would work. i'm crying
 function escape_regex(string) {return string.replace(new RegExp("[.*+?^${}()|[\]\\]", "g"), "\\$&");}
-function typo_regex(typo) {
-    const start_boundary = new RegExp("^\w").test(typo) ? "\\b" : "(?:^|\\s)";
-    const escaped = escape_regex(typo);
-    const end_boundary = new RegExp("\w$").test(typo) ? "\\b" : "(?:$|[\\s,!?\"'\n])";
-    return new RegExp(`${start_boundary}${escaped}${end_boundary}`, config.case_insensitive ? "i" : "");
-}
+// sorted by length so that anf. get's detected first. this word has took time from me I WILL NEVER GET BACK.
+const escaped_typos = typos.map(escape_regex).sort((a, b) => b.length - a.length);
+const typo_regex = new RegExp(`(?<!\\w)(${escaped_typos.join("|")})(?!\\w)`, config.case_insensitive ? "gi" : "g");
 
 // for pagination
 function generate_slug(string) {
@@ -95,20 +92,20 @@ message_files.forEach(file => {
 
 	messagesArray.forEach(msg => {
 		if (msg.content) {
-			const matchedTypos = typos.filter(typo => {
-				const regex = typo_regex(typo); return regex.test(msg.content);
-			});
+			const matches = [...msg.content.matchAll(typo_regex)];
 			
-			if (matchedTypos.length > 0) {
+			if (matches.length > 0) {
+				const matched = [...new Set(matches.map(match => {return config.case_insensitive ? match[0].toLowerCase() : match[0];}))];
+
 				const msg_id = msg.id ? `msg_${msg.id}` : `msg_unknown_${Math.floor(Math.random()*10000)}`;
 				const timestamp = msg.timestamp || null;
 
 				if (!messages[msg_id]) {
 					messages[msg_id] = {msg_id, timestamp, content: msg.content};
-					foundMessagesForText.push({msg_id, timestamp, typos: matchedTypos, content: msg.content});
+					foundMessagesForText.push({msg_id, timestamp, typos: matched, content: msg.content});
 				}
 
-				matchedTypos.forEach(typo => {
+				matched.forEach(typo => {
 					typos_finalmap.get(typo).details.occurrences.push({msg_id, timestamp});
 				});
 			}
