@@ -9,13 +9,20 @@ let config = {
 	folders: {src: "src", base: "base", output: "output"},
 	filenames: {
 		final_json: "final.json", source_txt: "source.txt",
+		definitions_json: "definitions.json", custom_definitions_json: "custom_definitions.json",
 		corrections_txt: "corrections.txt", typos_txt: "typos.txt",
 		extracted_msgs_txt: "messages.txt"
 	},
-	case_insensitive: true
+	case_insensitive: true,
+	definition_fetch_delay: 650,
+	definition_hiccup_delay: 2000,
+	definition_retryafter_fallback: 2000,
+	definition_fetch_retries: 3,
+	definition_source: "wiktionary", // options: default = "wiktionary" and "datamuse"
+	datamuse_ipa: true
 }
-
-if (fs.existsSync(config_path)) {config = {...config, ...JSON.parse(fs.readFileSync(config_path, "utf8"))};}
+if (fs.existsSync(config_path)) config = {...config, ...JSON.parse(fs.readFileSync(config_path, "utf8"))};
+config.definition_source = config.definition_source === "datamuse" ? config.definition_source : "wiktionary";
 
 const base_path = path.join(process.cwd(), `/${config.folders.base}/`);
 const output_path = path.join(process.cwd(), `/${config.folders.output}/`);
@@ -53,21 +60,24 @@ async function init_review() {
 			const parts = line.split(" || ");
 			if (parts.length >= 2) {processedDict.set(parts[0].trim(), parts.slice(1).join(" || ").trim());}
 		});
-
 		previousDictSize = processedDict.size;
-		if (processedDict.size > 0) {
-			console.log(`found previous progress: ${processedDict.size} typos already linked.`);
-			const choice = await ask_question("do you want to (c)ontinue from missing typos or (s)tart over? [c/s]:");
-			
-			if (choice.trim().toLowerCase() === "s") {processedDict.clear(); console.log("starting over from scratch.");}
-			else {console.log("resuming progress...");}
-		}
+	}
+	let typosToReview = typos.filter(typo => !processedDict.has(typo) && !existingExcludes.has(typo));
+	if (processedDict.size > 0 && typosToReview.length !== 0) {
+		console.log(`found previous progress: ${processedDict.size} out of ${typos.length} typos already linked.`);
+		const choice = await ask_question("do you want to (c)ontinue from missing typos or (s)tart over? [c/s]:");
+		if (choice.trim().toLowerCase() === "s") {processedDict.clear(); console.log("starting over from scratch.");}
+		else {console.log("resuming progress...");}
+	} else {
+		console.log(`the typo review was previously finished! ${processedDict.size} out of ${typos.length} typos already linked.`);
+		const choice = await ask_question("do you want to (c)ontinue or (s)tart over? [c/s]:");
+		if (choice.trim().toLowerCase() === "s") {processedDict.clear(); console.log("starting over from scratch.");}
 	}
 
-	let typosToReview = typos.filter(typo => !processedDict.has(typo) && !existingExcludes.has(typo));
-
-	console.log(`\n# TYPO REVIEWER`);
-	console.log(`remaining typos to review: ${typosToReview.length}\n`);
+	if (typosToReview.length !== 0) {
+		console.log(`\n# TYPO REVIEWER`);
+		console.log(`remaining typos to review: ${typosToReview.length}\n`);
+	}
 
 	let newExcludeds = [];
 
@@ -96,7 +106,7 @@ async function init_review() {
 			} else console.log(`--> skipped "${typo}" (correction cannot be empty).`);
 
 		} else if (input !== "" && (input.startsWith("https://") || input.startsWith("http://"))) {
-			// auto-guess the correction if it"s wiktionary (i use wikitionary as links for the corrected so this makes life easier for me)
+			// auto-guess the correction if it"s wiktionary (i use wiktionary as links for the corrected so this makes life easier for me)
 			let guessedCorrection = "";
 			if (input.includes("wiktionary.org/wiki/")) {guessedCorrection = decodeURIComponent(input.split("/wiki/").pop().replace(/_/g, " "));}
 			
@@ -111,9 +121,10 @@ async function init_review() {
 			console.log(`--> saved link and correction "${finalCorrection}" for "${typo}".`);
 			
 		} else console.log(`--> skipped "${typo}".`);
-		console.log("\n");
+		console.log();
 	};
 	rl.close();
+	console.log();
 
 	if (processedDict.size > 0) {
 		const lines = Array.from(processedDict.entries()).map(([word, data]) => `${word} || ${data}`);
@@ -125,8 +136,7 @@ async function init_review() {
 		fs.writeFileSync(exclude_path, sortedExcludes.join("\n"));
 		console.log(`added ${(existingExcludes.size > previousExcludesSize) ? existingExcludes.size - previousExcludesSize : 0} new excluded words to ${exclude_path}`);
 	}
-	console.log("\n");
-	console.log(`rrrrreview complete!\n`);
+	console.log(`\nrrrrreview complete!\n`);
 	console.log(`# you should be able to move on to running 4-build.js`);
 	console.log(`    - rerun 2-cspell.js if new excluded words have been added.\n`);
 }
