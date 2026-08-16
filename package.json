@@ -1,9 +1,10 @@
 {
 	"name": "forginese_typo-finder",
 	"version": "1.0.0",
-	"main": "index.js",
+	"description": "extract messsages to find typos, review typos to add corrections, build the json and fetch definitions",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
+
 		"extract:messages": "node 1-extract.js",
 		"build:cspell": "node 2-cspell.js",
 		"review:typo": "node 3-review.js",
@@ -14,13 +15,13 @@
 
 		"1-2": "node 1-extract.js && node 2-cspell.js",
 		  "2":                      "node 2-cspell.js",
-		"2-3":                      "node 2-cspell.js && node 3-review.js",
-		"2-4":                      "node 2-cspell.js && node 3-review.js && node 4-build.js",
+		  "2-3":                    "node 2-cspell.js && node 3-review.js",
+		  "2-4":                    "node 2-cspell.js && node 3-review.js && node 4-build.js",
 
 		"1-3": "node 1-extract.js && node 2-cspell.js && node 3-review.js",
 		"2-3":                      "node 2-cspell.js && node 3-review.js",
 		  "3":                                          "node 3-review.js",
-		"3-4":                                          "node 3-review.js && node 4-build.js",
+		  "3-4":                                        "node 3-review.js && node 4-build.js",
 
 		"1-4": "node 1-extract.js && node 2-cspell.js && node 3-review.js && node 4-build.js",
 		"2-4":                      "node 2-cspell.js && node 3-review.js && node 4-build.js",
@@ -31,10 +32,8 @@
 
 		"all": "node 1-extract.js && node 2-cspell.js && node 3-review.js && node 4-build.js && node 5-definitions.js"
 	},
-	"keywords": [],
 	"author": "xondisw",
-	"license": "ISC",
-	"description": "",
+	"license": "MIT",
 	"type": "module",
 	"dependencies": {
 		"cspell": "^8.19.4"
