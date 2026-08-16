@@ -8,6 +8,13 @@ and fetch `5-`**`definitions`**`.js`
 ...and import `definitions.json` to [xondisw/**forginese-speech-finder**](https://github.com/xondisw/forginese-speech-finder)<br/>
 ...and import everything to [xondisw/**forginese**](https://github.com/xondisw/forginese)
 
+<br/>
+<p align="center">
+	this was made for the
+	<br/>
+	<a href="https://github.com/xondisw/forginese"><img width="454" height="124" alt="with_wordmark" src="https://github.com/user-attachments/assets/1cecd7a6-0ea6-4cdc-8d46-19fe18795446" /></a></p>
+<br/>
+
 ## what it do?
 | script | description |
 | :----- | :---------- |
