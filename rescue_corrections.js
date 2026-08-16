@@ -22,7 +22,7 @@ if (fs.existsSync(config_path)) config = {...config, ...JSON.parse(fs.readFileSy
 config.definition_source = config.definition_source === "datamuse" ? config.definition_source : "wiktionary";
 
 // # NOTE:
-// this was used during the time where dictlinks.txt / corrections.txt had only two columns (typo || url) instead of three (typo || url || correction))
+// this was used during the time where corrections.txt (formerly dictlinks.txt) had only two columns (typo || url) instead of three (typo || url || correction)
 
 const base_path = path.join(process.cwd(), `/${config.folders.base}/`);
 const corrections_path = path.join(base_path, config.filenames.corrections_txt);
