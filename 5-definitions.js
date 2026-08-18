@@ -66,6 +66,7 @@ async function fetch_phonetic(word) {
 		if (response.ok) {
 			const data = await response.json();
 			if (data.length > 0 && data[0].tags) {
+				if (data[0].word.toLowerCase() !== word.toLowerCase()) return null; // fallback to null, had to do this because "falled"'s phonetic returned as sounding like "fabled" wait is that gigi perez refere
 				const ipa_tag = data[0].tags.find(tag => tag.startsWith("ipa_pron:"));
 				const pron_tag = data[0].tags.find(tag => tag.startsWith("pron:"));
 				if (ipa_tag) return `/${ipa_tag.split(":")[1]}/`;
@@ -94,6 +95,7 @@ async function normalize_wiktionary_output(word, wiktionary_data) {
 function normalize_datamuse_output(word, datamuse_data) {
 	const word_data = datamuse_data[0];
 	let normalized = {word: word, phonetic: null, meanings: []};
+	if (word_data.word.toLowerCase() !== word.toLowerCase()) return normalized; // fallback to normalized
 	if (word_data.tags) {
 		const ipa_tag = word_data.tags.find(tag => tag.startsWith("ipa_pron:"));
 		const pron_tag = word_data.tags.find(tag => tag.startsWith("pron:"));
