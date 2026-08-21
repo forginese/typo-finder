@@ -5,14 +5,14 @@
 `4-`**`build  `**`.js` the json,<br/>
 and fetch `5-`**`definitions`**`.js`
 
-...and import `definitions.json` to [xondisw/**forginese-speech-finder**](https://github.com/xondisw/forginese-speech-finder)<br/>
-...and import everything to [xondisw/**forginese**](https://github.com/xondisw/forginese)
+...and import ~~`definitions.json`~~ `final.json` to [forginese/**tts-kokoro-js**](https://github.com/forginese/tts-kokoro-js)<br/>
+...and import everything to [forginese/**website**](https://github.com/forginese/website)
 
 <br/>
 <p align="center">
 	this was made for the
 	<br/>
-	<a href="https://github.com/xondisw/forginese"><img width="454" height="124" alt="with_wordmark" src="https://github.com/user-attachments/assets/1cecd7a6-0ea6-4cdc-8d46-19fe18795446" /></a></p>
+	<a href="https://github.com/forginese"><img width="454" height="124" alt="with_wordmark" src="https://github.com/user-attachments/assets/1cecd7a6-0ea6-4cdc-8d46-19fe18795446" /></a></p>
 <br/>
 
 ## what it do?
@@ -212,7 +212,7 @@ this is every script you can run ^_^<br/>
 }
 ```
 > [!NOTE]
-> `corrections: [{...}]` and `typos: [{...}]` are arrays rather than an object like `messages: {"...": {...}}` is because those two arrays were designed to be looped through by the [eleventy website](https://github.com/xondisw/forginese).
+> `corrections: [{...}]` and `typos: [{...}]` are arrays rather than an object like `messages: {"...": {...}}` is because those two arrays were designed to be looped through by the [eleventy website](https://github.com/forginese/website).
 
 ## definitions.json layout
 ```json
