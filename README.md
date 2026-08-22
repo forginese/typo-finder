@@ -141,25 +141,34 @@ this is every script you can run ^_^<br/>
 		"corrections_txt": "corrections.txt", "typos_txt": "typos.txt",
 		"extracted_msgs_txt": "messages.txt"
 	},
-	"case_insensitive": true,
+	"case_handling": "insensitive",
 	"definition_fetch_delay": 650,
 	"definition_hiccup_delay": 2000,
 	"definition_retryafter_fallback": 2000,
 	"definition_fetch_retries": 3,
 	"definition_source": "wiktionary",
-	"datamuse_ipa": true
+	"definition_has_phonetic": true,
+	"datamuse_ipa": true,
+
+	"1_dry_run": false,
+	"2_dry_run": false,
+	"3_dry_run": false,
+	"4_dry_run": false,
+	"5_dry_run": false
 }
 ```
 ### what each option do?
 | option | description |
 | :----- | :---------- |
-| **`case_insensitive`** | if enabled, `4-build.js` will make **all typos case insensitive** by making it lowercase, merging all typo entries with the same spelling but different cases. |
-| **`definition_fetch_delay`** | controls the **delay** between fetching definitions. |
-| **`definition_hiccup_delay`** | controls the **delay** after getting a 5xx status code from the response. |
+| **`typos_case_handling`**            | controls how typo cases are handled in `4-build.js`<br/><br/>**options\:**<br/><ul><li>`"sensitive"` - no typos are merged based on the cases *(untested)*</li><li>`"insensitive"` (default) - typos are merged with the same letters but the cases of the first typo encountered will be preserved</li><li>`"lowercase"` - typos are merged by making everything lowercase (this was how the previous case_insensitive used to work) *(untested)*</li><li>`"uppercase"` - typos are merged by making everything UPPERCASE *(untested)*</li></ul> |
+| **`definition_fetch_delay`**         | controls the **delay** between fetching definitions. |
+| **`definition_hiccup_delay`**        | controls the **delay** after getting a 5xx status code from the response. |
 | **`definition_retryafter_fallback`** | controls the **fallback** delay if the "Retry-After" header is missing. |
-| **`definition_fetch_retries`** | controls how many times it will retry a fetch if it gets an error. |
-| **`definition_source`** | controls where to get definitions (does not change phonetic source)<br/><br/>**options\:**<br/><ul><li>`"wiktionary"` (default)</li><li>`"datamuse"`</li></ul> |
-| **`datamuse_ipa`** | controls if datamuse phonetic fetches should fetch ipa or arpabet |
+| **`definition_fetch_retries`**       | controls how many times it will retry a fetch if it gets an error. |
+| **`definition_source`**              | controls where to get definitions (does not change phonetic source)<br/><br/>**options\:**<br/><ul><li>`"wiktionary"` (default)</li><li>`"datamuse"`</li></ul> |
+| **`definition_has_phonetic`**        | controls if the phonetic field should exist within `definitions.json`<br/><br/><blockquote>this option was created following the decision to make [forginese/**tts-kokoro-js**](https://github.com/forginese/tts-kokoro-js) pass in words instead of phonetics. i'm still indecisive whether or not i should exclude phonetics from `definitions.json`</blockquote> |
+| **`datamuse_ipa`**                   | controls if datamuse phonetic fetches should fetch ipa or arpabet |
+| **`1_dry_run`**<br/>**`2_dry_run`**<br/>**`3_dry_run`**<br/>**`4_dry_run`**<br/>**`5_dry_run`** | mostly *untested* but this option prevents the scripts to write files and fetching definitions are completely skipped and is "simulated". each number corresponds to a script, so `1_dry_run` would only make `1-extract.js` dry run.<br/><br/><blockquote>`rescure_corrections.js` also implements the dry run option. it only needs any one of the 5 dry run options to be true</blockquote> |
 
 > [!WARNING]
 > setting `definition_source` to `"datamuse"` may cause problems by not using the intended definition you may want.
