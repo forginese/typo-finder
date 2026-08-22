@@ -12,16 +12,26 @@ let config = {
 		corrections_txt: "corrections.txt", typos_txt: "typos.txt",
 		extracted_msgs_txt: "messages.txt"
 	},
-	case_insensitive: true,
+	typos_case_handling: "insensitive", // options: default = "insensitive", ["insensitive", "sensitive", "lowercase", "uppercase"]
 	definition_fetch_delay: 650,
 	definition_hiccup_delay: 2000,
 	definition_retryafter_fallback: 2000,
 	definition_fetch_retries: 3,
-	definition_source: "wiktionary", // options: default = "wiktionary" and "datamuse"
-	datamuse_ipa: true
+	definition_source: "wiktionary", // options: default = "wiktionary", ["wiktionary", "datamuse"]
+	definition_has_phonetic: true,
+	datamuse_ipa: true,
+
+	"1_dry_run": false,
+	"2_dry_run": false,
+	"3_dry_run": false,
+	"4_dry_run": false,
+	"5_dry_run": false
 }
 if (fs.existsSync(config_path)) config = {...config, ...JSON.parse(fs.readFileSync(config_path, "utf8"))};
+const valid_case_handling = ["sensitive", "insensitive", "lowercase", "uppercase"];
+config.typos_case_handling = valid_case_handling.includes(config.typos_case_handling) ? config.typos_case_handling : "insensitive";
 config.definition_source = config.definition_source === "datamuse" ? config.definition_source : "wiktionary";
+config.dry_run = config["5_dry_run"] === true;
 
 const base_path = path.join(process.cwd(), `/${config.folders.base}/`);
 const output_path = path.join(process.cwd(), `/${config.folders.output}/`);
@@ -34,9 +44,10 @@ if (!fs.existsSync(finaljson_path)) {console.log(`could not find ${finaljson_pat
 const final_raw = JSON.parse(fs.readFileSync(finaljson_path, "utf8"));
 const corrections = final_raw.corrections.map(correction => correction.word);
 
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms >= 0 ? ms : 0));
 
 async function fetch_with_retry(url, options = {}, max_retries = 3) {
+	if (config.dry_run) return Promise.resolve("haio");
 	for (let attempt = 1; attempt <= max_retries; attempt++) {
 		const response = await fetch(url, options);
 		if (response.status === 429) {
@@ -61,6 +72,8 @@ const PARTS_OF_SPEECH_MAP = {
 };
 
 async function fetch_phonetic(word) {
+	if (config.dry_run) return null;
+	if (!config.definition_has_phonetic) return null;
 	try {
 		const response = await fetch_with_retry(`https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&md=r&max=1${config.datamuse_ipa ? "&ipa=1" : ""}`, {}, config.definition_fetch_retries || 3);
 		if (response.ok) {
@@ -78,25 +91,26 @@ async function fetch_phonetic(word) {
 }
 
 async function normalize_wiktionary_output(word, wiktionary_data) {
-	let normalized = {word: word, phonetic: null, meanings: []};
+	let normalized = config.definition_has_phonetic ? {word, phonetic: null, meanings: []} : {word, meanings: []};
+	if (config.dry_run) return normalized;
 	if (wiktionary_data.en) {
 		wiktionary_data.en.forEach(entry => {
 			const parts_of_speech = entry.partOfSpeech.toLowerCase();
-			const definitions = entry.definitions.map(definition_data => definition_data.definition.replace(new RegExp("<[^>]*>?", "gm"), "").trim());
-
+			const definitions = entry.definitions.map(definition_data => definition_data.definition.replace(new RegExp("<[^>]*>?", "gm"), "").trim()).filter(definition => definition.trim() !== "");
 			normalized.meanings.push({parts_of_speech, definitions});
 		});
 	}
 	// wiktionary rest api doesn't include phonetics, so we fetch it using datamuse as a fallback.
-	if (normalized.meanings.length > 0) normalized.phonetic = await fetch_phonetic(word);
+	if (normalized.meanings.length > 0 && config.definition_has_phonetic) normalized.phonetic = await fetch_phonetic(word);
 	return normalized;
 }
 
 function normalize_datamuse_output(word, datamuse_data) {
 	const word_data = datamuse_data[0];
-	let normalized = {word: word, phonetic: null, meanings: []};
+	let normalized = config.definition_has_phonetic ? {word, phonetic: null, meanings: []} : {word, meanings: []};
+	if (config.dry_run) return normalized;
 	if (word_data.word.toLowerCase() !== word.toLowerCase()) return normalized; // fallback to normalized
-	if (word_data.tags) {
+	if (word_data.tags && config.definition_has_phonetic) {
 		const ipa_tag = word_data.tags.find(tag => tag.startsWith("ipa_pron:"));
 		const pron_tag = word_data.tags.find(tag => tag.startsWith("pron:"));
 		if (ipa_tag) normalized.phonetic = `/${ipa_tag.split(":")[1]}/`;
@@ -108,7 +122,7 @@ function normalize_datamuse_output(word, datamuse_data) {
 			const parts = definition.split("\t");
 			if (parts.length === 2) {
 				const raw_partsofspeech = parts[0]; if (raw_partsofspeech === "N" || raw_partsofspeech === "PROPN") return;
-				const text = parts[1];
+				const text = parts[1]; if (text === "") return;
 				const parts_of_speech = PARTS_OF_SPEECH_MAP[raw_partsofspeech] || raw_partsofspeech;
 
 				if (!meanings[parts_of_speech]) meanings[parts_of_speech] = [];
@@ -126,7 +140,7 @@ async function fetch_definitions() {
 
 	let custom_definitions = {};
 	if (fs.existsSync(customdefinitions_path)) {custom_definitions = JSON.parse(fs.readFileSync(customdefinitions_path, "utf8"));}
-	else {console.log(`could not find ${customdefinitions_path}! a blank json will be created in place for it.`); fs.writeFileSync(customdefinitions_path, JSON.stringify({}, null, 4));}
+	else {console.log(`could not find ${customdefinitions_path}! a blank json will be created in place for it.`); if (!config.dry_run) fs.writeFileSync(customdefinitions_path, JSON.stringify({}, null, 4));}
 
 	console.log(`found ${corrections.length} total corrections.`);
 	console.log(`found ${Object.keys(definitions_cache).length} existing definitions from cache.`);
@@ -138,14 +152,24 @@ async function fetch_definitions() {
 
 	for (let i = 0; i < corrections.length; i++) {
 		const correction = corrections[i];
+		if (config.dry_run) {
+			console.log(`[${i + 1}/${corrections.length}] Correction: "${correction}"`);
+			console.log(`fetching definition...`);
+			await delay(50);
+			console.log(`--> added "${correction}" to ${definitionsjson_path}!`);
+			await delay((config.definition_fetch_delay || 650) - 50);
+			console.log();
+		}
 		if (Object.hasOwn(custom_definitions, correction)) {
 			if (!Object.hasOwn(definitions_cache, correction) || (JSON.stringify(definitions_cache[correction]) !== JSON.stringify(custom_definitions[correction]))) {
 				console.log(`[${i + 1}/${corrections.length}] Correction: "${correction}"`);
-				const custom_definition = custom_definitions[correction];
-				console.log(`--> fetching phonetic for custom definition override...`);
-				if (!custom_definition.phonetic) custom_definition.phonetic = await fetch_phonetic(correction);
+				const custom_definition = config.definition_has_phonetic ? custom_definitions[correction] : {word: custom_definition.word, meanings: custom_definition.meanings};
+				if (config.definition_has_phonetic) {
+					console.log(`--> fetching phonetic for custom definition override...`);
+					if (!custom_definition.phonetic) custom_definition.phonetic = await fetch_phonetic(correction);
+				}
 				definitions_cache[correction] = custom_definition; custom_applied++;
-				fs.writeFileSync(definitionsjson_path, JSON.stringify(definitions_cache, null, 4));
+				if (!config.dry_run) fs.writeFileSync(definitionsjson_path, JSON.stringify(definitions_cache, null, 4));
 				console.log(`--> applied custom definition override!\n`);
 			}
 			continue;
@@ -202,7 +226,7 @@ async function fetch_definitions() {
 				console.log(`--> not found in ${config.definition_source}!`);
 			}
 
-			fs.writeFileSync(definitionsjson_path, JSON.stringify(definitions_cache, null, 4));
+			if (!config.dry_run) fs.writeFileSync(definitionsjson_path, JSON.stringify(definitions_cache, null, 4));
 			console.log(`--> added "${correction}" to ${definitionsjson_path}!`);
 
 			// waiting 650ms (by default) before the next request, this can be edited in config.json if you're feeling a little risky

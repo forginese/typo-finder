@@ -10,11 +10,18 @@
 		"corrections_txt": "corrections.txt", "typos_txt": "typos.txt",
 		"extracted_msgs_txt": "messages.txt"
 	},
-	"case_insensitive": true,
+	"case_handling": "insensitive",
 	"definition_fetch_delay": 650,
 	"definition_hiccup_delay": 2000,
 	"definition_retryafter_fallback": 2000,
 	"definition_fetch_retries": 3,
 	"definition_source": "wiktionary",
-	"datamuse_ipa": true
+	"definition_has_phonetic": true,
+	"datamuse_ipa": true,
+
+	"1_dry_run": false,
+	"2_dry_run": false,
+	"3_dry_run": false,
+	"4_dry_run": false,
+	"5_dry_run": false
 }

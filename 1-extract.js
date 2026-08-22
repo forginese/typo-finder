@@ -12,16 +12,26 @@ let config = {
 		corrections_txt: "corrections.txt", typos_txt: "typos.txt",
 		extracted_msgs_txt: "messages.txt"
 	},
-	case_insensitive: true,
+	typos_case_handling: "insensitive", // options: default = "insensitive", ["insensitive", "sensitive", "lowercase", "uppercase"]
 	definition_fetch_delay: 650,
 	definition_hiccup_delay: 2000,
 	definition_retryafter_fallback: 2000,
 	definition_fetch_retries: 3,
-	definition_source: "wiktionary", // options: default = "wiktionary" and "datamuse"
-	datamuse_ipa: true
+	definition_source: "wiktionary", // options: default = "wiktionary", ["wiktionary", "datamuse"]
+	definition_has_phonetic: true,
+	datamuse_ipa: true,
+
+	"1_dry_run": false,
+	"2_dry_run": false,
+	"3_dry_run": false,
+	"4_dry_run": false,
+	"5_dry_run": false
 }
 if (fs.existsSync(config_path)) config = {...config, ...JSON.parse(fs.readFileSync(config_path, "utf8"))};
+const valid_case_handling = ["sensitive", "insensitive", "lowercase", "uppercase"];
+config.typos_case_handling = valid_case_handling.includes(config.typos_case_handling) ? config.typos_case_handling : "insensitive";
 config.definition_source = config.definition_source === "datamuse" ? config.definition_source : "wiktionary";
+config.dry_run = config["1_dry_run"] === true;
 
 const src_path = path.join(process.cwd(), `/${config.folders.src}/`);
 const base_path = path.join(process.cwd(), `/${config.folders.base}/`);
@@ -45,6 +55,6 @@ files.forEach(file => {
 	messages.forEach(msg => {if (msg.content) {all_messages.push(msg.content);}});
 });
 
-fs.writeFileSync(messages_path, all_messages.join("\n"));
+if (!config.dry_run) fs.writeFileSync(messages_path, all_messages.join("\n"));
 console.log(`extracted ${all_messages.length} messages to ${messages_path}\n`);
 console.log(`# you should be able to move on to running 2-cspell.js\n`);

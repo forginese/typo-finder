@@ -13,16 +13,26 @@ let config = {
 		corrections_txt: "corrections.txt", typos_txt: "typos.txt",
 		extracted_msgs_txt: "messages.txt"
 	},
-	case_insensitive: true,
+	typos_case_handling: "insensitive", // options: default = "insensitive", ["insensitive", "sensitive", "lowercase", "uppercase"]
 	definition_fetch_delay: 650,
 	definition_hiccup_delay: 2000,
 	definition_retryafter_fallback: 2000,
 	definition_fetch_retries: 3,
-	definition_source: "wiktionary", // options: default = "wiktionary" and "datamuse"
-	datamuse_ipa: true
+	definition_source: "wiktionary", // options: default = "wiktionary", ["wiktionary", "datamuse"]
+	definition_has_phonetic: true,
+	datamuse_ipa: true,
+
+	"1_dry_run": false,
+	"2_dry_run": false,
+	"3_dry_run": false,
+	"4_dry_run": false,
+	"5_dry_run": false
 }
 if (fs.existsSync(config_path)) config = {...config, ...JSON.parse(fs.readFileSync(config_path, "utf8"))};
+const valid_case_handling = ["sensitive", "insensitive", "lowercase", "uppercase"];
+config.typos_case_handling = valid_case_handling.includes(config.typos_case_handling) ? config.typos_case_handling : "insensitive";
 config.definition_source = config.definition_source === "datamuse" ? config.definition_source : "wiktionary";
+config.dry_run = config["3_dry_run"] === true;
 
 const base_path = path.join(process.cwd(), `/${config.folders.base}/`);
 const output_path = path.join(process.cwd(), `/${config.folders.output}/`);
@@ -34,7 +44,7 @@ const dictionaries_path = path.join(process.cwd(), "/dictionaries/");
 const exclude_path = path.join(dictionaries_path, "excluded-words.txt");
 
 if (!fs.existsSync(typos_path)) {console.log(`could not find ${typos_path}! did'ya you run 2-cspell.js first?`); process.exit(1);}
-if (!fs.existsSync(exclude_path)) {console.log(`could not find ${exclude_path}! a blank file will be created in place for it.`); fs.writeFileSync(exclude_path, "");}
+if (!fs.existsSync(exclude_path)) {console.log(`could not find ${exclude_path}! a blank file will be created in place for it.`); if (!config.dry_run) fs.writeFileSync(exclude_path, "");}
 // excluded words is required. this will create a blank file automatically.
 
 const typos_raw = fs.readFileSync(typos_path, "utf8");
@@ -66,12 +76,18 @@ async function init_review() {
 	if (processedDict.size > 0 && typosToReview.length !== 0) {
 		console.log(`found previous progress: ${processedDict.size} out of ${typos.length} typos already linked.`);
 		const choice = await ask_question("do you want to (c)ontinue from missing typos or (s)tart over? [c/s]:");
-		if (choice.trim().toLowerCase() === "s") {processedDict.clear(); console.log("starting over from scratch.");}
+		if (choice.trim().toLowerCase() === "s") {
+			processedDict.clear(); console.log("starting over from scratch.");
+			typosToReview = typos.filter(typo => !processedDict.has(typo) && !existingExcludes.has(typo));
+		}
 		else {console.log("resuming progress...");}
 	} else {
 		console.log(`the typo review was previously finished! ${processedDict.size} out of ${typos.length} typos already linked.`);
 		const choice = await ask_question("do you want to (c)ontinue or (s)tart over? [c/s]:");
-		if (choice.trim().toLowerCase() === "s") {processedDict.clear(); console.log("starting over from scratch.");}
+		if (choice.trim().toLowerCase() === "s") {
+			processedDict.clear(); console.log("starting over from scratch.");
+			typosToReview = typos.filter(typo => !processedDict.has(typo) && !existingExcludes.has(typo));
+		}
 	}
 
 	if (typosToReview.length !== 0) {
@@ -128,12 +144,12 @@ async function init_review() {
 
 	if (processedDict.size > 0) {
 		const lines = Array.from(processedDict.entries()).map(([word, data]) => `${word} || ${data}`);
-		fs.writeFileSync(corrections_path, lines.join("\n"));
+		if (!config.dry_run) fs.writeFileSync(corrections_path, lines.join("\n"));
 		console.log(`saved ${(processedDict.size > previousDictSize) ? processedDict.size - previousDictSize : 0} new dictionary links to ${corrections_path}`);
 	}
 	if (existingExcludes.size > 0) {
 		const sortedExcludes = Array.from(existingExcludes).sort();
-		fs.writeFileSync(exclude_path, sortedExcludes.join("\n"));
+		if (!config.dry_run) fs.writeFileSync(exclude_path, sortedExcludes.join("\n"));
 		console.log(`added ${(existingExcludes.size > previousExcludesSize) ? existingExcludes.size - previousExcludesSize : 0} new excluded words to ${exclude_path}`);
 	}
 	console.log(`\nrrrrreview complete!\n`);

@@ -13,16 +13,26 @@ let config = {
 		corrections_txt: "corrections.txt", typos_txt: "typos.txt",
 		extracted_msgs_txt: "messages.txt"
 	},
-	case_insensitive: true,
+	typos_case_handling: "insensitive", // options: default = "insensitive", ["insensitive", "sensitive", "lowercase", "uppercase"]
 	definition_fetch_delay: 650,
 	definition_hiccup_delay: 2000,
 	definition_retryafter_fallback: 2000,
 	definition_fetch_retries: 3,
-	definition_source: "wiktionary", // options: default = "wiktionary" and "datamuse"
-	datamuse_ipa: true
+	definition_source: "wiktionary", // options: default = "wiktionary", ["wiktionary", "datamuse"]
+	definition_has_phonetic: true,
+	datamuse_ipa: true,
+
+	"1_dry_run": false,
+	"2_dry_run": false,
+	"3_dry_run": false,
+	"4_dry_run": false,
+	"5_dry_run": false
 }
 if (fs.existsSync(config_path)) config = {...config, ...JSON.parse(fs.readFileSync(config_path, "utf8"))};
+const valid_case_handling = ["sensitive", "insensitive", "lowercase", "uppercase"];
+config.typos_case_handling = valid_case_handling.includes(config.typos_case_handling) ? config.typos_case_handling : "insensitive";
 config.definition_source = config.definition_source === "datamuse" ? config.definition_source : "wiktionary";
+config.dry_run = config["2_dry_run"] === true;
 
 const base_path = path.join(process.cwd(), `/${config.folders.base}/`);
 if (!fs.existsSync(base_path)) {fs.mkdirSync(base_path);}
@@ -32,9 +42,11 @@ const typos_path = path.join(base_path, config.filenames.typos_txt);
 
 if (!fs.existsSync(messages_path)) {console.log(`could not find ${messages_path}! did'ya you run 1-extract.js first?`); process.exit(1);}
 if (!fs.existsSync(typos_path)) {console.log(`could not find ${typos_path}! a blank file will be created in place for it.\n`); fs.writeFileSync(typos_path, "");}
-console.log(`# running npx cspell "${messages_path}" --words-only --unique --no-exit-code > "${typos_path}"\n`);
+const cspell_command = `npx cspell "${messages_path}" --words-only --unique --no-exit-code > "${typos_path}"`;
+console.log(`# running ${cspell_command}\n`);
+if (config.dry_run) {console.log(`# you should be able to move on to running 3-review.js\n`); process.exit(0);}
 
 try {
-	console.log(execSync(`npx cspell "${messages_path}" --words-only --unique --no-exit-code > "${typos_path}"`).toString());
+	console.log(execSync(cspell_command).toString());
 } catch (error) {console.error(error);}
 console.log(`# you should be able to move on to running 3-review.js\n`);
