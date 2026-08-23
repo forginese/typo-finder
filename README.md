@@ -5,14 +5,24 @@
 `4-`**`build  `**`.js` the json,<br/>
 and fetch `5-`**`definitions`**`.js`
 
+<!--
 ...and import ~~`definitions.json`~~ `final.json` to [forginese/**tts-kokoro-js**](https://github.com/forginese/tts-kokoro-js)<br/>
 ...and import everything to [forginese/**website**](https://github.com/forginese/website)
+-->
 
 <br/>
 <p align="center">
 	this was made for the
 	<br/>
 	<a href="https://github.com/forginese"><img width="454" height="124" alt="with_wordmark" src="https://github.com/user-attachments/assets/1cecd7a6-0ea6-4cdc-8d46-19fe18795446" /></a></p>
+<br/>
+
+<p align="center">
+  the cycle<br/>
+  <b><i>you are here</i></b> ->
+  <a href="https://github.com/forginese/tts-kokoro-js">forginese/<b>tts-kokoro-js</b></a> ->
+  <a href="https://github.com/forginese/website">forginese/<b>website</b></a>
+</p>
 <br/>
 
 ## what it do?
