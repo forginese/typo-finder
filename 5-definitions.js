@@ -96,7 +96,9 @@ async function normalize_wiktionary_output(word, wiktionary_data) {
 	if (wiktionary_data.en) {
 		wiktionary_data.en.forEach(entry => {
 			const parts_of_speech = entry.partOfSpeech.toLowerCase();
-			const definitions = entry.definitions.map(definition_data => definition_data.definition.replace(new RegExp("<[^>]*>?", "gm"), "").trim()).filter(definition => definition.trim() !== "");
+			const definitions = entry.definitions.map(definition_data => definition_data.definition
+				.replace(new RegExp("<style[^>]*>[\\s\\S]*?<\\/style>", "gi"), "").replace(new RegExp("<[^>]*>?", "g"), "").trim()
+			).filter(definition => definition !== "");
 			normalized.meanings.push({parts_of_speech, definitions});
 		});
 	}
