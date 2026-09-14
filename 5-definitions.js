@@ -45,7 +45,7 @@ const definitionsjson_path = path.join(output_path, config.filenames.definitions
 
 if (!fs.existsSync(finaljson_path)) {console.log(`could not find ${finaljson_path}! did'ya you run 4-build.js first?`); process.exit(1);}
 const final_raw = JSON.parse(fs.readFileSync(finaljson_path, "utf8"));
-const corrections = final_raw.corrections.map(correction => correction.word);
+const corrections = Array.isArray(final_raw.corrections) ? final_raw.corrections.map(correction => correction.word) : Object.values(final_raw.corrections).map(correction => correction.word);
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms >= 0 ? ms : 0));
 
