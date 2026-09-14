@@ -19,6 +19,9 @@ let config = {
 	definition_fetch_retries: 3,
 	definition_source: "wiktionary", // options: default = "wiktionary", ["wiktionary", "datamuse"]
 	definition_has_phonetic: true,
+	wiktionary_disable_html_filter: true,
+	wiktionary_disable_html_sanitization: false, // if wiktionary_disable_html_filter is true, this is hardcodedly disabled
+	wiktionary_keep_anchors: false,
 	datamuse_ipa: true,
 
 	"1_dry_run": false,
@@ -185,7 +188,7 @@ if (config.dry_run) {
 	process.exit(0);
 }
 
-const finalJSONOutput = {messages, corrections: Array.from(corrections_map.values()), typos: Array.from(typos_finalmap.values())};
+const finalJSONOutput = {messages, corrections: Object.fromEntries(corrections_map), typos: Object.fromEntries(typos_finalmap)};
 
 let textOutput = "# TYPO SOURCE MESSAGES\n\n";
 foundMessagesForText.forEach(item => {

@@ -19,6 +19,9 @@ let config = {
 	definition_fetch_retries: 3,
 	definition_source: "wiktionary", // options: default = "wiktionary", ["wiktionary", "datamuse"]
 	definition_has_phonetic: true,
+	wiktionary_disable_html_filter: true,
+	wiktionary_disable_html_sanitization: false, // if wiktionary_disable_html_filter is true, this is hardcodedly disabled
+	wiktionary_keep_anchors: false,
 	datamuse_ipa: true,
 
 	"1_dry_run": false,
@@ -95,10 +98,21 @@ async function normalize_wiktionary_output(word, wiktionary_data) {
 	if (config.dry_run) return normalized;
 	if (wiktionary_data.en) {
 		wiktionary_data.en.forEach(entry => {
-			const parts_of_speech = entry.partOfSpeech.toLowerCase();
-			const definitions = entry.definitions.map(definition_data => definition_data.definition
-				.replace(new RegExp("<style[^>]*>[\\s\\S]*?<\\/style>", "gi"), "").replace(new RegExp("<[^>]*>?", "g"), "").trim()
-			).filter(definition => definition !== "");
+			const parts_of_speech = entry.partOfSpeech.toLowerCase(); if (parts_of_speech === "symbol") return;
+			const definitions = entry.definitions.map(definition_data => {
+				let def = definition_data.definition;
+				if (!config.wiktionary_disable_html_filter) {
+					return def.replace(new RegExp("<style[^>]*>[\\s\\S]*?<\\/style>", "gi"), "").replace(new RegExp("<[^>]*>?", "g"), "").trim();
+				}
+				if (config.wiktionary_disable_html_sanitization) return def;
+				def = def.replace(new RegExp("<style[^>]*>[\\s\\S]*?<\\/style>", "gi"), "");
+				def = config.wiktionary_keep_anchors ? def.replace(new RegExp("<a\\s+[^>]*href=\"([^\"]+)\"[^>]*>", "gi"), (match, href) => {
+					const url = href.startsWith("/wiki/") ? `https://en.wiktionary.org${href}` : href;
+					return `<a href="${url}">`;
+				}) : def.replace(new RegExp("<\\/?a\\b[^>]*>", "gi"), "");
+				def = def.replace(new RegExp("<(span|ul|ol|li|b|i|em|strong|div)\\s+[^>]+>", "gi"), "<$1>");
+				return def.replace("<span></span> ", "").trim();
+			}).filter(definition => definition !== "");
 			normalized.meanings.push({parts_of_speech, definitions});
 		});
 	}

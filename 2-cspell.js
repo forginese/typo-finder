@@ -20,6 +20,9 @@ let config = {
 	definition_fetch_retries: 3,
 	definition_source: "wiktionary", // options: default = "wiktionary", ["wiktionary", "datamuse"]
 	definition_has_phonetic: true,
+	wiktionary_disable_html_filter: true,
+	wiktionary_disable_html_sanitization: false, // if wiktionary_disable_html_filter is true, this is hardcodedly disabled
+	wiktionary_keep_anchors: false,
 	datamuse_ipa: true,
 
 	"1_dry_run": false,

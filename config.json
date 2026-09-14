@@ -10,13 +10,16 @@
 		"corrections_txt": "corrections.txt", "typos_txt": "typos.txt",
 		"extracted_msgs_txt": "messages.txt"
 	},
-	"case_handling": "insensitive",
+	"typos_case_handling": "insensitive",
 	"definition_fetch_delay": 650,
 	"definition_hiccup_delay": 2000,
 	"definition_retryafter_fallback": 2000,
 	"definition_fetch_retries": 3,
 	"definition_source": "wiktionary",
 	"definition_has_phonetic": true,
+	"wiktionary_disable_html_filter": true,
+	"wiktionary_disable_html_sanitization": false,
+	"wiktionary_keep_anchors": false,
 	"datamuse_ipa": true,
 
 	"1_dry_run": false,
